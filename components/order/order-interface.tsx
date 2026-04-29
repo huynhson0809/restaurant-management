@@ -609,7 +609,9 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
   const [addItemQuantity, setAddItemQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [fullscreenImageOpen, setFullscreenImageOpen] = useState(false);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
+    null,
+  );
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const swipeLocked = useRef(false);
@@ -1622,7 +1624,8 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
       e.preventDefault();
       const images = getItemImages(selectedItemToAdd);
       // Add resistance at edges
-      const atEdge = (dx > 0 && currentImageIndex === 0) ||
+      const atEdge =
+        (dx > 0 && currentImageIndex === 0) ||
         (dx < 0 && currentImageIndex === images.length - 1);
       setSwipeOffset(atEdge ? dx * 0.3 : dx);
     }
@@ -1643,7 +1646,10 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
 
     // Threshold: 1/4 of width OR fast flick (velocity > 0.5px/ms)
     const threshold = (e.currentTarget as HTMLElement).offsetWidth / 4;
-    const shouldSwipe = images.length > 1 && absDx > absDy && (absDx > threshold || velocity > 0.5);
+    const shouldSwipe =
+      images.length > 1 &&
+      absDx > absDy &&
+      (absDx > threshold || velocity > 0.5);
 
     if (shouldSwipe) {
       if (dx < 0 && currentImageIndex < images.length - 1) {
@@ -2212,8 +2218,11 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
                           className="flex h-full"
                           style={{
                             transform: `translateX(calc(-${currentImageIndex * 100}% + ${swipeOffset}px))`,
-                            transition: swipeOffset !== 0 ? 'none' : 'transform 300ms ease-out',
-                            willChange: 'transform',
+                            transition:
+                              swipeOffset !== 0
+                                ? "none"
+                                : "transform 300ms ease-out",
+                            willChange: "transform",
                           }}
                         >
                           {images.map((src, idx) => (
@@ -2223,12 +2232,13 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
                               alt={`${getItemName(selectedItemToAdd)} ${idx + 1}`}
                               className="w-full h-full object-cover shrink-0 cursor-pointer"
                               crossOrigin="anonymous"
-                              style={{ minWidth: '100%' }}
+                              style={{ minWidth: "100%" }}
                               role="button"
                               tabIndex={idx === currentImageIndex ? 0 : -1}
                               onClick={() => setFullscreenImageOpen(true)}
                               onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") setFullscreenImageOpen(true);
+                                if (e.key === "Enter" || e.key === " ")
+                                  setFullscreenImageOpen(true);
                               }}
                             />
                           ))}
@@ -2373,85 +2383,95 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
       </Dialog>
 
       {/* Fullscreen Image Viewer */}
-      {selectedItemToAdd && fullscreenImageOpen && (() => {
-        const images = getItemImages(selectedItemToAdd);
-        return (
-          <Dialog open={fullscreenImageOpen} onOpenChange={setFullscreenImageOpen}>
-            <DialogContent
-              className="max-w-none w-screen h-screen p-0 border-none bg-black/95 rounded-none"
-              showCloseButton={true}
+      {selectedItemToAdd &&
+        fullscreenImageOpen &&
+        (() => {
+          const images = getItemImages(selectedItemToAdd);
+          return (
+            <Dialog
+              open={fullscreenImageOpen}
+              onOpenChange={setFullscreenImageOpen}
             >
-              <DialogHeader className="sr-only">
-                <DialogTitle>{getItemName(selectedItemToAdd)}</DialogTitle>
-              </DialogHeader>
-              <div
-                className="relative w-full h-full flex items-center justify-center overflow-hidden"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
+              <DialogContent
+                className="max-w-none w-screen h-screen p-0 border-none bg-black/95 rounded-none"
+                showCloseButton={true}
               >
+                <DialogHeader className="sr-only">
+                  <DialogTitle>{getItemName(selectedItemToAdd)}</DialogTitle>
+                </DialogHeader>
                 <div
-                  className="flex w-full h-full items-center"
-                  style={{
-                    transform: `translateX(calc(-${currentImageIndex * 100}% + ${swipeOffset}px))`,
-                    transition: swipeOffset !== 0 ? 'none' : 'transform 300ms ease-out',
-                    willChange: 'transform',
-                  }}
+                  className="relative w-full h-full flex items-center justify-center overflow-hidden"
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                 >
-                  {images.map((src, idx) => (
-                    <div key={src} className="shrink-0 w-full h-full flex items-center justify-center" style={{ minWidth: '100%' }}>
-                      <img
-                        src={src}
-                        alt={`${getItemName(selectedItemToAdd)} ${idx + 1}`}
-                        className="max-w-full max-h-full object-contain"
-                        crossOrigin="anonymous"
-                      />
-                    </div>
-                  ))}
-                </div>
-                {/* Navigation Arrows */}
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-                    >
-                      <ChevronLeft className="w-6 h-6" />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-                    >
-                      <ChevronRight className="w-6 h-6" />
-                    </button>
-                  </>
-                )}
-                {/* Dots + Counter */}
-                {images.length > 1 && (
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-                    <span className="text-white/80 text-sm">
-                      {currentImageIndex + 1} / {images.length}
-                    </span>
-                    <div className="flex gap-2">
-                      {images.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCurrentImageIndex(idx)}
-                          className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                            idx === currentImageIndex
-                              ? "bg-white"
-                              : "bg-white/40"
-                          }`}
+                  <div
+                    className="flex w-full h-full items-center"
+                    style={{
+                      transform: `translateX(calc(-${currentImageIndex * 100}% + ${swipeOffset}px))`,
+                      transition:
+                        swipeOffset !== 0 ? "none" : "transform 300ms ease-out",
+                      willChange: "transform",
+                    }}
+                  >
+                    {images.map((src, idx) => (
+                      <div
+                        key={src}
+                        className="shrink-0 w-full h-full flex items-center justify-center"
+                        style={{ minWidth: "100%" }}
+                      >
+                        <img
+                          src={src}
+                          alt={`${getItemName(selectedItemToAdd)} ${idx + 1}`}
+                          className="max-w-full max-h-full object-contain"
+                          crossOrigin="anonymous"
                         />
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-        );
-      })()}
+                  {/* Navigation Arrows */}
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={prevImage}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </button>
+                    </>
+                  )}
+                  {/* Dots + Counter */}
+                  {images.length > 1 && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+                      <span className="text-white/80 text-sm">
+                        {currentImageIndex + 1} / {images.length}
+                      </span>
+                      <div className="flex gap-2">
+                        {images.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setCurrentImageIndex(idx)}
+                            className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                              idx === currentImageIndex
+                                ? "bg-white"
+                                : "bg-white/40"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          );
+        })()}
     </div>
   );
 }
