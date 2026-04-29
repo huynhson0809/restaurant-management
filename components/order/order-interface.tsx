@@ -608,6 +608,11 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
   const [addItemNote, setAddItemNote] = useState("");
   const [addItemQuantity, setAddItemQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [fullscreenImageOpen, setFullscreenImageOpen] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const swipeLocked = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [tableName, setTableName] = useState(`Bàn ${tableId}`);
@@ -1486,9 +1491,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
       );
       const invalid = cart.filter((c) => !validIds.has(c.menuItem.id));
       if (invalid.length > 0) {
-        const names = invalid
-          .map((i) => getItemName(i.menuItem))
-          .join(", ");
+        const names = invalid.map((i) => getItemName(i.menuItem)).join(", ");
         toast.error(
           language === "en"
             ? `These items are no longer available: ${names}. Please choose other items.`
@@ -1496,9 +1499,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
           { duration: 8000 },
         );
         // Auto-remove invalid items so customer can re-submit immediately
-        setCart((prev) =>
-          prev.filter((c) => validIds.has(c.menuItem.id)),
-        );
+        setCart((prev) => prev.filter((c) => validIds.has(c.menuItem.id)));
         setIsSubmitting(false);
         return;
       }
@@ -1572,17 +1573,91 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
     }
   }
 
-  // Image carousel navigation
+  // Image carousel navigation with slide animation
+  function goToImage(index: number) {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setCurrentImageIndex(index);
+    setTimeout(() => setIsAnimating(false), 300);
+  }
+
   function nextImage() {
     if (!selectedItemToAdd) return;
     const images = getItemImages(selectedItemToAdd);
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    goToImage((currentImageIndex + 1) % images.length);
   }
 
   function prevImage() {
     if (!selectedItemToAdd) return;
     const images = getItemImages(selectedItemToAdd);
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    goToImage((currentImageIndex - 1 + images.length) % images.length);
+  }
+
+  // Touch swipe handlers — follows finger in real-time, then snaps
+  function handleTouchStart(e: React.TouchEvent) {
+    if (isAnimating) return;
+    swipeLocked.current = false;
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now(),
+    };
+    setSwipeOffset(0);
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!touchStartRef.current || !selectedItemToAdd) return;
+    const dx = e.touches[0].clientX - touchStartRef.current.x;
+    const dy = e.touches[0].clientY - touchStartRef.current.y;
+    // Lock direction on first significant movement
+    if (!swipeLocked.current && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      swipeLocked.current = true;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        // Vertical scroll — bail out
+        touchStartRef.current = null;
+        return;
+      }
+    }
+    if (swipeLocked.current) {
+      e.preventDefault();
+      const images = getItemImages(selectedItemToAdd);
+      // Add resistance at edges
+      const atEdge = (dx > 0 && currentImageIndex === 0) ||
+        (dx < 0 && currentImageIndex === images.length - 1);
+      setSwipeOffset(atEdge ? dx * 0.3 : dx);
+    }
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!touchStartRef.current || !selectedItemToAdd) {
+      setSwipeOffset(0);
+      return;
+    }
+    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+    const elapsed = Date.now() - touchStartRef.current.time;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    const velocity = absDx / Math.max(elapsed, 1);
+    const images = getItemImages(selectedItemToAdd);
+
+    // Threshold: 1/4 of width OR fast flick (velocity > 0.5px/ms)
+    const threshold = (e.currentTarget as HTMLElement).offsetWidth / 4;
+    const shouldSwipe = images.length > 1 && absDx > absDy && (absDx > threshold || velocity > 0.5);
+
+    if (shouldSwipe) {
+      if (dx < 0 && currentImageIndex < images.length - 1) {
+        nextImage();
+      } else if (dx > 0 && currentImageIndex > 0) {
+        prevImage();
+      }
+    } else if (absDx < 10 && absDy < 10 && elapsed < 300) {
+      // Tap — open fullscreen
+      if (images.length > 0) setFullscreenImageOpen(true);
+    }
+
+    setSwipeOffset(0);
+    touchStartRef.current = null;
   }
 
   if (orderPlaced) {
@@ -2051,7 +2126,10 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
                     >
                       {isSubmitting ? (
                         <>
-                          <Loader2 className="w-5 h-5 mr-2 animate-spin" strokeWidth={2.5} />
+                          <Loader2
+                            className="w-5 h-5 mr-2 animate-spin"
+                            strokeWidth={2.5}
+                          />
                           {t("placing")}
                           {/* Subtle progress shimmer */}
                           <span
@@ -2119,18 +2197,42 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
           {selectedItemToAdd && (
             <>
               {/* Large Image Carousel */}
-              <div className="relative w-full aspect-[4/3] bg-muted">
+              <div
+                className="relative w-full aspect-[4/3] bg-muted overflow-hidden"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
                 {(() => {
                   const images = getItemImages(selectedItemToAdd);
                   if (images.length > 0) {
                     return (
                       <>
-                        <img
-                          src={images[currentImageIndex]}
-                          alt={getItemName(selectedItemToAdd)}
-                          className="w-full h-full object-cover"
-                          crossOrigin="anonymous"
-                        />
+                        <div
+                          className="flex h-full"
+                          style={{
+                            transform: `translateX(calc(-${currentImageIndex * 100}% + ${swipeOffset}px))`,
+                            transition: swipeOffset !== 0 ? 'none' : 'transform 300ms ease-out',
+                            willChange: 'transform',
+                          }}
+                        >
+                          {images.map((src, idx) => (
+                            <img
+                              key={src}
+                              src={src}
+                              alt={`${getItemName(selectedItemToAdd)} ${idx + 1}`}
+                              className="w-full h-full object-cover shrink-0 cursor-pointer"
+                              crossOrigin="anonymous"
+                              style={{ minWidth: '100%' }}
+                              role="button"
+                              tabIndex={idx === currentImageIndex ? 0 : -1}
+                              onClick={() => setFullscreenImageOpen(true)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") setFullscreenImageOpen(true);
+                              }}
+                            />
+                          ))}
+                        </div>
                         {/* Navigation Arrows */}
                         {images.length > 1 && (
                           <>
@@ -2182,7 +2284,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
               </div>
 
               {/* Item Details */}
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-4 pb-6">
                 <div>
                   <h3 className="text-xl font-semibold text-foreground">
                     {getItemName(selectedItemToAdd)}
@@ -2269,6 +2371,87 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Fullscreen Image Viewer */}
+      {selectedItemToAdd && fullscreenImageOpen && (() => {
+        const images = getItemImages(selectedItemToAdd);
+        return (
+          <Dialog open={fullscreenImageOpen} onOpenChange={setFullscreenImageOpen}>
+            <DialogContent
+              className="max-w-none w-screen h-screen p-0 border-none bg-black/95 rounded-none"
+              showCloseButton={true}
+            >
+              <DialogHeader className="sr-only">
+                <DialogTitle>{getItemName(selectedItemToAdd)}</DialogTitle>
+              </DialogHeader>
+              <div
+                className="relative w-full h-full flex items-center justify-center overflow-hidden"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div
+                  className="flex w-full h-full items-center"
+                  style={{
+                    transform: `translateX(calc(-${currentImageIndex * 100}% + ${swipeOffset}px))`,
+                    transition: swipeOffset !== 0 ? 'none' : 'transform 300ms ease-out',
+                    willChange: 'transform',
+                  }}
+                >
+                  {images.map((src, idx) => (
+                    <div key={src} className="shrink-0 w-full h-full flex items-center justify-center" style={{ minWidth: '100%' }}>
+                      <img
+                        src={src}
+                        alt={`${getItemName(selectedItemToAdd)} ${idx + 1}`}
+                        className="max-w-full max-h-full object-contain"
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                  ))}
+                </div>
+                {/* Navigation Arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  </>
+                )}
+                {/* Dots + Counter */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+                    <span className="text-white/80 text-sm">
+                      {currentImageIndex + 1} / {images.length}
+                    </span>
+                    <div className="flex gap-2">
+                      {images.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentImageIndex(idx)}
+                          className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                            idx === currentImageIndex
+                              ? "bg-white"
+                              : "bg-white/40"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
