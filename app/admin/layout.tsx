@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Quản Lý - Restaurant Order System',
-  description: 'Quản lý nhà hàng',
+  title: 'Quản Lý',
+  description: 'Quản lý nhà hàng - Menu, đơn hàng, cài đặt',
 }
 
 export default function AdminLayout({
