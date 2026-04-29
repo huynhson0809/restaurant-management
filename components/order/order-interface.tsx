@@ -1771,7 +1771,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
                     className="w-full flex text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset"
                   >
                     {/* Food Image */}
-                    <div className="w-28 h-28 shrink-0 bg-muted relative overflow-hidden">
+                    <div className="w-28 shrink-0 bg-muted relative overflow-hidden self-stretch">
                       {images.length > 0 ? (
                         <img
                           src={images[0]}
@@ -2190,7 +2190,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
       {/* Add Item Dialog with Large Image Carousel */}
       <Dialog open={addItemDialogOpen} onOpenChange={setAddItemDialogOpen}>
         <DialogContent
-          className="max-w-lg p-0 overflow-hidden"
+          className="p-0 overflow-y-auto sm:max-w-lg"
           aria-describedby={undefined}
         >
           <DialogHeader className="sr-only">
@@ -2393,7 +2393,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
               onOpenChange={setFullscreenImageOpen}
             >
               <DialogContent
-                className="max-w-none w-screen h-screen p-0 border-none bg-black/95 rounded-none"
+                className="inset-0 max-w-none p-0 border-none bg-black/95 rounded-none sm:inset-0 sm:max-w-none sm:translate-x-0 sm:translate-y-0 sm:rounded-none"
                 showCloseButton={true}
               >
                 <DialogHeader className="sr-only">
