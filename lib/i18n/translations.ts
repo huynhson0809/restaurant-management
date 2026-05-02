@@ -14,6 +14,7 @@ export const translations = {
     // Order Interface
     selectDishesToAdd: "Chọn món để thêm vào giỏ",
     searchDishes: "Tìm món ăn...",
+    noSearchResults: "Không tìm thấy món ăn nào",
     addToCart: "Thêm vào giỏ hàng",
     quantity: "Số lượng",
     noteOptional: "Ghi chú (tùy chọn)",
@@ -96,6 +97,15 @@ export const translations = {
     status: "Trạng thái",
     actions: "Thao tác",
 
+    // Parent-child menu items
+    variants: "Các loại",
+    chooseVariant: "Chọn loại",
+    parentItem: "Món cha",
+    childItem: "Món con",
+    standalone: "Độc lập",
+    addVariant: "Thêm món con",
+    fromPrice: "từ",
+
     // Table management
     addNewTable: "Thêm Bàn Mới",
     editTable: "Sửa Bàn",
@@ -128,6 +138,7 @@ export const translations = {
     // Order Interface
     selectDishesToAdd: "Select dishes to add to cart",
     searchDishes: "Search dishes...",
+    noSearchResults: "No dishes found",
     addToCart: "Add to Cart",
     quantity: "Quantity",
     noteOptional: "Note (optional)",
@@ -209,6 +220,15 @@ export const translations = {
     available: "Available",
     status: "Status",
     actions: "Actions",
+
+    // Parent-child menu items
+    variants: "Variants",
+    chooseVariant: "Choose variant",
+    parentItem: "Parent item",
+    childItem: "Child item",
+    standalone: "Standalone",
+    addVariant: "Add variant",
+    fromPrice: "from",
 
     // Table management
     addNewTable: "Add New Table",

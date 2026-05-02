@@ -39,6 +39,7 @@ export interface Database {
         Row: {
           id: string
           category_id: string | null
+          parent_id: string | null
           name: string
           name_en: string | null
           description: string | null
@@ -54,6 +55,7 @@ export interface Database {
         Insert: {
           id?: string
           category_id?: string | null
+          parent_id?: string | null
           name: string
           name_en?: string | null
           description?: string | null
@@ -69,6 +71,7 @@ export interface Database {
         Update: {
           id?: string
           category_id?: string | null
+          parent_id?: string | null
           name?: string
           name_en?: string | null
           description?: string | null

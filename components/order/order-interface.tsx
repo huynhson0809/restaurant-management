@@ -37,6 +37,7 @@ import {
   History,
   Clock,
   Loader2,
+  X,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -101,9 +102,11 @@ const DEMO_CATEGORIES: Category[] = [
 ];
 
 const DEMO_MENU_ITEMS: MenuItem[] = [
+  // "Cơm Tấm" is a parent item
   {
     id: "1",
     category_id: "1",
+    parent_id: null,
     name: "Cơm Tấm Sườn Bì Chả",
     name_en: "Broken Rice with Pork Chop",
     description: "Cơm tấm đặc trưng Sài Gòn với sườn nướng, bì, chả trứng",
@@ -125,6 +128,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "2",
     category_id: "1",
+    parent_id: null,
     name: "Cơm Gà Hội An",
     name_en: "Hoi An Chicken Rice",
     description: "Cơm gà xé phay theo phong cách Hội An",
@@ -144,6 +148,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "3",
     category_id: "1",
+    parent_id: null,
     name: "Cơm Đùi Gà Nướng",
     name_en: "Grilled Chicken Leg Rice",
     description: "Đùi gà nướng mật ong thơm lừng",
@@ -162,6 +167,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "4",
     category_id: "2",
+    parent_id: null,
     name: "Bún Thịt Nướng Chả Giò",
     name_en: "Vermicelli with Grilled Pork",
     description: "Bún tươi với thịt nướng và chả giò giòn",
@@ -181,6 +187,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "5",
     category_id: "2",
+    parent_id: null,
     name: "Bún Bò",
     name_en: "Beef Noodle Soup",
     description: "Bún bò Huế đậm đà sả và mắm ruốc",
@@ -197,9 +204,31 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     created_at: "",
     updated_at: "",
   },
+  // "Phở Bò" is a parent item with children
+  {
+    id: "pho-bo",
+    category_id: "3",
+    parent_id: null,
+    name: "Phở Bò",
+    name_en: "Beef Pho",
+    description: "Phở bò truyền thống với nhiều lựa chọn",
+    description_en: "Traditional beef pho with various options",
+    price: 50000,
+    image_url:
+      "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800&h=600&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=800&h=600&fit=crop",
+    ],
+    is_available: true,
+    sort_order: 1,
+    created_at: "",
+    updated_at: "",
+  },
   {
     id: "6",
     category_id: "3",
+    parent_id: "pho-bo",
     name: "Phở Bò Tái",
     name_en: "Pho with Rare Beef",
     description: "Phở nước trong với thịt bò tái mềm",
@@ -219,6 +248,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "7",
     category_id: "3",
+    parent_id: "pho-bo",
     name: "Phở Bò Nạm",
     name_en: "Pho with Beef Brisket",
     description: "Phở với nạm bò mềm thấm vị",
@@ -237,6 +267,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "8",
     category_id: "3",
+    parent_id: "pho-bo",
     name: "Phở Bò Bắp",
     name_en: "Pho with Beef Shank",
     description: "Phở với bắp bò giòn dai",
@@ -255,6 +286,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "9",
     category_id: "3",
+    parent_id: "pho-bo",
     name: "Phở Bò Viên",
     name_en: "Pho with Beef Meatballs",
     description: "Phở với bò viên tươi dai",
@@ -273,6 +305,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "10",
     category_id: "3",
+    parent_id: "pho-bo",
     name: "Phở Bò Sốt Vang",
     name_en: "Pho with Beef Stew",
     description: "Phở đặc biệt với bò sốt vang đậm đà",
@@ -291,6 +324,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "11",
     category_id: "3",
+    parent_id: null,
     name: "Phở Gà",
     name_en: "Chicken Pho",
     description: "Phở gà nước trong vị thanh",
@@ -306,9 +340,30 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     created_at: "",
     updated_at: "",
   },
+  // "Bánh Mì" parent with children
+  {
+    id: "banh-mi",
+    category_id: "4",
+    parent_id: null,
+    name: "Bánh Mì",
+    name_en: "Banh Mi",
+    description: "Bánh mì giòn với nhiều loại nhân",
+    description_en: "Crispy baguette with various fillings",
+    price: 25000,
+    image_url:
+      "https://images.unsplash.com/photo-1600454309261-3dc6c57f6a0e?w=800&h=600&fit=crop",
+    images: [
+      "https://images.unsplash.com/photo-1600454309261-3dc6c57f6a0e?w=800&h=600&fit=crop",
+    ],
+    is_available: true,
+    sort_order: 0,
+    created_at: "",
+    updated_at: "",
+  },
   {
     id: "12",
     category_id: "4",
+    parent_id: "banh-mi",
     name: "Bánh Mì Chả",
     name_en: "Banh Mi with Vietnamese Ham",
     description: "Bánh mì giòn với chả lụa",
@@ -327,6 +382,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "13",
     category_id: "4",
+    parent_id: "banh-mi",
     name: "Bánh Mì Xíu Mại",
     name_en: "Banh Mi with Meatballs",
     description: "Bánh mì xíu mại sốt cà",
@@ -345,6 +401,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "14",
     category_id: "4",
+    parent_id: "banh-mi",
     name: "Bánh Mì Thịt Nướng",
     name_en: "Banh Mi with Grilled Pork",
     description: "Bánh mì thịt heo nướng thơm",
@@ -363,6 +420,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "15",
     category_id: "4",
+    parent_id: "banh-mi",
     name: "Bánh Mì Gà Nướng",
     name_en: "Banh Mi with Grilled Chicken",
     description: "Bánh mì gà nướng sả ớt",
@@ -381,6 +439,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "16",
     category_id: "4",
+    parent_id: "banh-mi",
     name: "Bánh Mì Heo Quay",
     name_en: "Banh Mi with Roasted Pork",
     description: "Bánh mì heo quay da giòn",
@@ -399,6 +458,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "17",
     category_id: "4",
+    parent_id: "banh-mi",
     name: "Bánh Mì Bò Nướng",
     name_en: "Banh Mi with Grilled Beef",
     description: "Bánh mì bò nướng lá lốt",
@@ -417,6 +477,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "18",
     category_id: "5",
+    parent_id: null,
     name: "Hủ Tiếu Nước",
     name_en: "Hu Tieu Soup",
     description: "Hủ tiếu nước lèo trong veo",
@@ -435,6 +496,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "19",
     category_id: "5",
+    parent_id: null,
     name: "Hủ Tiếu Bò Kho",
     name_en: "Hu Tieu with Beef Stew",
     description: "Hủ tiếu bò kho đậm đà",
@@ -453,6 +515,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "20",
     category_id: "5",
+    parent_id: null,
     name: "Hủ Tiếu Khô",
     name_en: "Dry Hu Tieu",
     description: "Hủ tiếu khô trộn mỡ hành",
@@ -471,6 +534,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "21",
     category_id: "6",
+    parent_id: null,
     name: "Gỏi Cuốn",
     name_en: "Fresh Spring Rolls",
     description: "2 cuốn gỏi cuốn tôm thịt",
@@ -489,6 +553,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "22",
     category_id: "6",
+    parent_id: null,
     name: "Chả Giò",
     name_en: "Fried Spring Rolls",
     description: "4 cuốn chả giò giòn rụm",
@@ -507,6 +572,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "23",
     category_id: "6",
+    parent_id: null,
     name: "Xíu Mại Chén",
     name_en: "Steamed Meatballs",
     description: "Xíu mại hấp sốt cà chua",
@@ -525,6 +591,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "24",
     category_id: "6",
+    parent_id: null,
     name: "Bò Kho",
     name_en: "Beef Stew",
     description: "Bò kho đậm đà ăn kèm bánh mì",
@@ -543,6 +610,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "25",
     category_id: "6",
+    parent_id: null,
     name: "Gỏi Gà",
     name_en: "Chicken Salad",
     description: "Gỏi gà xé phay giòn ngon",
@@ -561,6 +629,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "26",
     category_id: "6",
+    parent_id: null,
     name: "Gỏi Bò Tái Chanh",
     name_en: "Rare Beef Salad with Lime",
     description: "Bò tái chanh chua ngọt",
@@ -609,6 +678,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
   const [addItemQuantity, setAddItemQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [fullscreenImageOpen, setFullscreenImageOpen] = useState(false);
+  const fullscreenImageOpenRef = useRef(false);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
     null,
   );
@@ -655,6 +725,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
     }>
   >([]);
   const [historySheetOpen, setHistorySheetOpen] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<MenuItem | null>(null);
 
   // Get localized text for menu items
   const getItemName = (item: MenuItem) =>
@@ -1315,14 +1386,34 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menuItems, visibleCategoryIds]);
 
+  // Build parent->children map from all available items
+  const childrenMap = useMemo(() => {
+    const map = new Map<string, MenuItem[]>();
+    for (const item of menuItems) {
+      if (item.parent_id && item.is_available) {
+        const children = map.get(item.parent_id) || [];
+        children.push(item);
+        map.set(item.parent_id, children);
+      }
+    }
+    // Sort children by sort_order
+    for (const children of map.values()) {
+      children.sort((a, b) => a.sort_order - b.sort_order);
+    }
+    return map;
+  }, [menuItems]);
+
   const filteredItems = useMemo(() => {
     // Filter out unavailable items + items in hidden categories
-    let items = menuItems.filter(
+    const availableItems = menuItems.filter(
       (item) =>
         item.is_available &&
         item.category_id != null &&
         visibleCategoryIds.has(item.category_id),
     );
+
+    // Only show parent/standalone items in grid
+    let items = availableItems.filter((item) => !item.parent_id);
 
     if (selectedCategory) {
       items = items.filter((item) => item.category_id === selectedCategory);
@@ -1330,15 +1421,28 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      items = items.filter(
-        (item) =>
+      items = items.filter((item) => {
+        // Match parent name
+        if (
           item.name.toLowerCase().includes(query) ||
-          item.name_en?.toLowerCase().includes(query),
-      );
+          item.name_en?.toLowerCase().includes(query)
+        )
+          return true;
+        // Match any child name → show parent
+        const children = childrenMap.get(item.id);
+        if (children) {
+          return children.some(
+            (child) =>
+              child.name.toLowerCase().includes(query) ||
+              child.name_en?.toLowerCase().includes(query),
+          );
+        }
+        return false;
+      });
     }
 
     return items;
-  }, [menuItems, selectedCategory, searchQuery, visibleCategoryIds]);
+  }, [menuItems, selectedCategory, searchQuery, visibleCategoryIds, childrenMap]);
 
   const cartTotal = useMemo(() => {
     return cart.reduce(
@@ -1352,7 +1456,14 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
   }, [cart]);
 
   function openAddItemDialog(menuItem: MenuItem) {
+    const children = childrenMap.get(menuItem.id);
     setSelectedItemToAdd(menuItem);
+    // If parent has children, pre-select the first child for ordering
+    if (children && children.length > 0) {
+      setSelectedVariant(children[0]);
+    } else {
+      setSelectedVariant(null);
+    }
     setAddItemNote("");
     setAddItemQuantity(1);
     setCurrentImageIndex(0);
@@ -1362,13 +1473,16 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
   function confirmAddToCart() {
     if (!selectedItemToAdd) return;
 
+    // Use the selected variant (child) if available, otherwise the item itself
+    const itemToAdd = selectedVariant || selectedItemToAdd;
+
     setCart((prev) => {
       const existing = prev.find(
-        (item) => item.menuItem.id === selectedItemToAdd.id,
+        (item) => item.menuItem.id === itemToAdd.id,
       );
       if (existing) {
         return prev.map((item) =>
-          item.menuItem.id === selectedItemToAdd.id
+          item.menuItem.id === itemToAdd.id
             ? {
                 ...item,
                 quantity: item.quantity + addItemQuantity,
@@ -1380,15 +1494,16 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
       return [
         ...prev,
         {
-          menuItem: selectedItemToAdd,
+          menuItem: itemToAdd,
           quantity: addItemQuantity,
           notes: addItemNote,
         },
       ];
     });
-    toast.success(`${t("added")} ${getItemName(selectedItemToAdd)}`);
+    toast.success(`${t("added")} ${getItemName(itemToAdd)}`);
     setAddItemDialogOpen(false);
     setSelectedItemToAdd(null);
+    setSelectedVariant(null);
   }
 
   function updateQuantity(itemId: string, delta: number) {
@@ -1659,7 +1774,10 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
       }
     } else if (absDx < 10 && absDy < 10 && elapsed < 300) {
       // Tap — open fullscreen
-      if (images.length > 0) setFullscreenImageOpen(true);
+      if (images.length > 0) {
+        fullscreenImageOpenRef.current = true;
+        setFullscreenImageOpen(true);
+      }
     }
 
     setSwipeOffset(0);
@@ -1723,7 +1841,9 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
               </p>
             </div>
           </div>
-          <LanguageSwitcher />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+          </div>
         </div>
 
         {/* Search */}
@@ -1760,76 +1880,89 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
 
       {/* Menu Items */}
       <main className="p-4">
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredItems.map((item) => {
             const images = getItemImages(item);
+            const children = childrenMap.get(item.id);
+            const hasChildren = children && children.length > 0;
+            const minPrice = hasChildren
+              ? Math.min(...children.map((c) => c.price))
+              : item.price;
+            const maxPrice = hasChildren
+              ? Math.max(...children.map((c) => c.price))
+              : item.price;
             return (
-              <Card key={item.id} className="overflow-hidden">
+              <Card key={item.id} className="overflow-hidden group relative">
                 <CardContent className="p-0">
                   <button
                     onClick={() => openAddItemDialog(item)}
-                    className="w-full flex text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset"
+                    className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                   >
                     {/* Food Image */}
-                    <div className="w-28 shrink-0 bg-muted relative overflow-hidden self-stretch">
+                    <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] bg-muted overflow-hidden">
                       {images.length > 0 ? (
                         <img
                           src={images[0]}
                           alt={getItemName(item)}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           crossOrigin="anonymous"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
-                              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop&q=80";
+                              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop&q=80";
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full relative">
-                          <img
-                            src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop&q=80"
-                            alt="Food placeholder"
-                            className="w-full h-full object-cover opacity-40"
-                            crossOrigin="anonymous"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <UtensilsCrossed className="w-8 h-8 text-muted-foreground/70" />
-                          </div>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <UtensilsCrossed className="w-10 h-10 text-muted-foreground/40" />
                         </div>
                       )}
-                      {images.length > 1 && (
-                        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
-                          +{images.length - 1}
+                      {hasChildren && (
+                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full font-medium">
+                          {children.length} {t("variants").toLowerCase()}
                         </div>
                       )}
                     </div>
 
                     {/* Food Info */}
-                    <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
-                      <div>
-                        <h3 className="font-medium text-foreground leading-tight">
-                          {getItemName(item)}
-                        </h3>
-                        {language === "vi" && item.name_en && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {item.name_en}
-                          </p>
-                        )}
-                        {getItemDescription(item) && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {getItemDescription(item)}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="text-primary font-semibold">
-                          {formatPrice(item.price)}
+                    <div className="p-3 space-y-1">
+                      <h3 className="font-semibold text-sm text-foreground leading-tight line-clamp-2">
+                        {getItemName(item)}
+                      </h3>
+                      {getItemDescription(item) && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {getItemDescription(item)}
                         </p>
-                        <span className="text-xs text-muted-foreground">
-                          {t("tapToOrder")}
-                        </span>
-                      </div>
+                      )}
+                      {/* Show children list below description */}
+                      {hasChildren && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {children.map((c) => getItemName(c)).join(", ")}
+                        </p>
+                      )}
+                      <p className="text-primary font-bold text-sm pt-0.5">
+                        {hasChildren ? (
+                          minPrice === maxPrice ? (
+                            formatPrice(minPrice)
+                          ) : (
+                            <>{formatPrice(minPrice)} - {formatPrice(maxPrice)}</>
+                          )
+                        ) : (
+                          formatPrice(item.price)
+                        )}
+                      </p>
                     </div>
                   </button>
+                  {/* Quick Add "+" button */}
+                  <Button
+                    size="icon"
+                    className="absolute bottom-3 right-3 h-9 w-9 rounded-full shadow-lg"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openAddItemDialog(item);
+                    }}
+                  >
+                    <Plus className="w-5 h-5" />
+                  </Button>
                 </CardContent>
               </Card>
             );
@@ -1839,7 +1972,11 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
         {filteredItems.length === 0 && (
           <div className="text-center py-12">
             <UtensilsCrossed className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-            <p className="text-muted-foreground">{t("searchDishes")}</p>
+            <p className="text-muted-foreground">
+              {searchQuery.trim()
+                ? t("noSearchResults")
+                : t("searchDishes")}
+            </p>
           </div>
         )}
       </main>
@@ -2188,10 +2325,16 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
       </Dialog>
 
       {/* Add Item Dialog with Large Image Carousel */}
-      <Dialog open={addItemDialogOpen} onOpenChange={setAddItemDialogOpen}>
+      <Dialog open={addItemDialogOpen} onOpenChange={(open) => {
+        if (!open && fullscreenImageOpenRef.current) return;
+        setAddItemDialogOpen(open);
+      }}>
         <DialogContent
-          className="p-0 overflow-y-auto sm:max-w-lg"
+          className="p-0 sm:max-w-lg h-full sm:h-auto sm:max-h-[90dvh] flex! flex-col overflow-hidden"
           aria-describedby={undefined}
+          onEscapeKeyDown={(e) => {
+            if (fullscreenImageOpenRef.current) e.preventDefault();
+          }}
         >
           <DialogHeader className="sr-only">
             <DialogTitle>
@@ -2202,14 +2345,15 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
           </DialogHeader>
           {selectedItemToAdd && (
             <>
-              {/* Large Image Carousel */}
+              {/* Large Image Carousel - fixed at top */}
               <div
-                className="relative w-full aspect-[4/3] bg-muted overflow-hidden"
+                className="relative w-full aspect-[4/3] bg-muted overflow-hidden shrink-0"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
                 {(() => {
+                  // Always show parent item's images
                   const images = getItemImages(selectedItemToAdd);
                   if (images.length > 0) {
                     return (
@@ -2235,10 +2379,12 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
                               style={{ minWidth: "100%" }}
                               role="button"
                               tabIndex={idx === currentImageIndex ? 0 : -1}
-                              onClick={() => setFullscreenImageOpen(true)}
+                              onClick={() => { fullscreenImageOpenRef.current = true; setFullscreenImageOpen(true); }}
                               onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ")
+                                if (e.key === "Enter" || e.key === " ") {
+                                  fullscreenImageOpenRef.current = true;
                                   setFullscreenImageOpen(true);
+                                }
                               }}
                             />
                           ))}
@@ -2293,185 +2439,261 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
                 })()}
               </div>
 
-              {/* Item Details */}
-              <div className="p-4 space-y-4 pb-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground">
-                    {getItemName(selectedItemToAdd)}
-                  </h3>
-                  {language === "vi" && selectedItemToAdd.name_en && (
-                    <p className="text-sm text-muted-foreground">
-                      {selectedItemToAdd.name_en}
-                    </p>
+              {/* Item Details - scrollable */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="p-4 space-y-4 pb-6">
+                  {/* Show name/description only for items WITHOUT children */}
+                  {!childrenMap.get(selectedItemToAdd.id)?.length && (
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">
+                        {getItemName(selectedItemToAdd)}
+                      </h3>
+                      {language === "vi" && selectedItemToAdd.name_en && (
+                        <p className="text-sm text-muted-foreground">
+                          {selectedItemToAdd.name_en}
+                        </p>
+                      )}
+                      {getItemDescription(selectedItemToAdd) && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {getItemDescription(selectedItemToAdd)}
+                        </p>
+                      )}
+                      <p className="text-xl text-primary font-bold mt-2">
+                        {formatPrice(selectedItemToAdd.price)}
+                      </p>
+                    </div>
                   )}
-                  {getItemDescription(selectedItemToAdd) && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {getItemDescription(selectedItemToAdd)}
-                    </p>
-                  )}
-                  <p className="text-xl text-primary font-bold mt-2">
-                    {formatPrice(selectedItemToAdd.price)}
-                  </p>
-                </div>
 
-                {/* Quantity */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{t("quantity")}</label>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        setAddItemQuantity(Math.max(1, addItemQuantity - 1))
+                  {/* Variant Selection for parent items - radio style */}
+                  {(() => {
+                    const children = childrenMap.get(selectedItemToAdd.id);
+                    if (!children || children.length === 0) return null;
+                    return (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          {t("chooseVariant")}
+                        </label>
+                        <div className="space-y-2">
+                          {children.map((child) => (
+                            <button
+                              key={child.id}
+                              type="button"
+                              onClick={() => setSelectedVariant(child)}
+                              className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                                selectedVariant?.id === child.id
+                                  ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                            >
+                              {/* Radio circle */}
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                selectedVariant?.id === child.id
+                                  ? "border-primary"
+                                  : "border-muted-foreground/40"
+                              }`}>
+                                {selectedVariant?.id === child.id && (
+                                  <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm">
+                                  {getItemName(child)}
+                                </p>
+                                {getItemDescription(child) && (
+                                  <p className="text-xs text-muted-foreground line-clamp-1">
+                                    {getItemDescription(child)}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="font-bold text-primary text-sm shrink-0">
+                                {formatPrice(child.price)}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Quantity */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">{t("quantity")}</label>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                          setAddItemQuantity(Math.max(1, addItemQuantity - 1))
+                        }
+                        disabled={addItemQuantity <= 1}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <span className="w-12 text-center font-semibold text-lg">
+                        {addItemQuantity}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setAddItemQuantity(addItemQuantity + 1)}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Note */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      {t("noteOptional")}
+                    </label>
+                    <Textarea
+                      placeholder={t("notePlaceholder")}
+                      value={addItemNote}
+                      onChange={(e) =>
+                        setAddItemNote(e.target.value.slice(0, 200))
                       }
-                      disabled={addItemQuantity <= 1}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                    <span className="w-12 text-center font-semibold text-lg">
-                      {addItemQuantity}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setAddItemQuantity(addItemQuantity + 1)}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                      rows={2}
+                      maxLength={200}
+                      className="resize-none max-h-24 overflow-y-auto"
+                    />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {addItemNote.length}/200
+                    </div>
                   </div>
-                </div>
-
-                {/* Note */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    {t("noteOptional")}
-                  </label>
-                  <Textarea
-                    placeholder={t("notePlaceholder")}
-                    value={addItemNote}
-                    onChange={(e) =>
-                      setAddItemNote(e.target.value.slice(0, 200))
-                    }
-                    rows={2}
-                    maxLength={200}
-                    className="resize-none max-h-24 overflow-y-auto"
-                  />
-                  <div className="text-xs text-muted-foreground text-right">
-                    {addItemNote.length}/200
-                  </div>
-                </div>
-
-                {/* Total and Add Button */}
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      {t("subtotal")}
-                    </span>
-                    <p className="text-xl font-bold text-primary">
-                      {formatPrice(selectedItemToAdd.price * addItemQuantity)}
-                    </p>
-                  </div>
-                  <Button onClick={confirmAddToCart} size="lg" className="px-8">
-                    <Plus className="w-4 h-4 mr-2" />
-                    {t("addToCart")}
-                  </Button>
                 </div>
               </div>
+
+              {/* Fixed bottom: Total and Add Button */}
+              <div className="shrink-0 border-t px-4 py-3 flex items-center justify-between">
+                <div>
+                  <span className="text-sm text-muted-foreground">
+                    {t("subtotal")}
+                  </span>
+                  <p className="text-xl font-bold text-primary">
+                    {formatPrice(
+                      (selectedVariant || selectedItemToAdd).price *
+                        addItemQuantity,
+                    )}
+                  </p>
+                </div>
+                <Button onClick={confirmAddToCart} size="lg" className="px-8">
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t("addToCart")}
+                </Button>
+              </div>
+
+              {/* Fullscreen Image Viewer - inside DialogContent to stay within Radix's pointer-events scope */}
+              {fullscreenImageOpen && (() => {
+                const images = getItemImages(selectedItemToAdd);
+                const closeFullscreen = () => {
+                  fullscreenImageOpenRef.current = false;
+                  setFullscreenImageOpen(false);
+                };
+                return (
+                  <div
+                    className="fixed inset-0 z-[9999] bg-black/95 pointer-events-auto"
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeFullscreen();
+                      }
+                    }}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={getItemName(selectedItemToAdd)}
+                    tabIndex={-1}
+                    ref={(el) => el?.focus()}
+                  >
+                    {/* Close button */}
+                    <button
+                      type="button"
+                      onClick={closeFullscreen}
+                      className="absolute top-4 right-4 z-[10000] flex size-10 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-colors hover:bg-white/30 active:bg-white/40 pointer-events-auto"
+                    >
+                      <X className="size-6" />
+                      <span className="sr-only">Close</span>
+                    </button>
+                    <div
+                      className="relative w-full h-full flex items-center justify-center overflow-hidden"
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                    >
+                      <div
+                        className="flex w-full h-full items-center"
+                        style={{
+                          transform: `translateX(calc(-${currentImageIndex * 100}% + ${swipeOffset}px))`,
+                          transition:
+                            swipeOffset !== 0 ? "none" : "transform 300ms ease-out",
+                          willChange: "transform",
+                        }}
+                      >
+                        {images.map((src, idx) => (
+                          <div
+                            key={src}
+                            className="shrink-0 w-full h-full flex items-center justify-center"
+                            style={{ minWidth: "100%" }}
+                          >
+                            <img
+                              src={src}
+                              alt={`${getItemName(selectedItemToAdd)} ${idx + 1}`}
+                              className="max-w-full max-h-full object-contain"
+                              crossOrigin="anonymous"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      {/* Navigation Arrows */}
+                      {images.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={prevImage}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                          >
+                            <ChevronLeft className="w-6 h-6" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={nextImage}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                          >
+                            <ChevronRight className="w-6 h-6" />
+                          </button>
+                        </>
+                      )}
+                      {/* Dots + Counter */}
+                      {images.length > 1 && (
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+                          <span className="text-white/80 text-sm">
+                            {currentImageIndex + 1} / {images.length}
+                          </span>
+                          <div className="flex gap-2">
+                            {images.map((_, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setCurrentImageIndex(idx)}
+                                className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                                  idx === currentImageIndex
+                                    ? "bg-white"
+                                    : "bg-white/40"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Fullscreen Image Viewer */}
-      {selectedItemToAdd &&
-        fullscreenImageOpen &&
-        (() => {
-          const images = getItemImages(selectedItemToAdd);
-          return (
-            <Dialog
-              open={fullscreenImageOpen}
-              onOpenChange={setFullscreenImageOpen}
-            >
-              <DialogContent
-                className="inset-0 max-w-none p-0 border-none bg-black/95 rounded-none sm:inset-0 sm:max-w-none sm:translate-x-0 sm:translate-y-0 sm:rounded-none"
-                showCloseButton={true}
-              >
-                <DialogHeader className="sr-only">
-                  <DialogTitle>{getItemName(selectedItemToAdd)}</DialogTitle>
-                </DialogHeader>
-                <div
-                  className="relative w-full h-full flex items-center justify-center overflow-hidden"
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  <div
-                    className="flex w-full h-full items-center"
-                    style={{
-                      transform: `translateX(calc(-${currentImageIndex * 100}% + ${swipeOffset}px))`,
-                      transition:
-                        swipeOffset !== 0 ? "none" : "transform 300ms ease-out",
-                      willChange: "transform",
-                    }}
-                  >
-                    {images.map((src, idx) => (
-                      <div
-                        key={src}
-                        className="shrink-0 w-full h-full flex items-center justify-center"
-                        style={{ minWidth: "100%" }}
-                      >
-                        <img
-                          src={src}
-                          alt={`${getItemName(selectedItemToAdd)} ${idx + 1}`}
-                          className="max-w-full max-h-full object-contain"
-                          crossOrigin="anonymous"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  {/* Navigation Arrows */}
-                  {images.length > 1 && (
-                    <>
-                      <button
-                        onClick={prevImage}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-                      >
-                        <ChevronLeft className="w-6 h-6" />
-                      </button>
-                      <button
-                        onClick={nextImage}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-                      >
-                        <ChevronRight className="w-6 h-6" />
-                      </button>
-                    </>
-                  )}
-                  {/* Dots + Counter */}
-                  {images.length > 1 && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-                      <span className="text-white/80 text-sm">
-                        {currentImageIndex + 1} / {images.length}
-                      </span>
-                      <div className="flex gap-2">
-                        {images.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setCurrentImageIndex(idx)}
-                            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                              idx === currentImageIndex
-                                ? "bg-white"
-                                : "bg-white/40"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
-          );
-        })()}
     </div>
   );
 }

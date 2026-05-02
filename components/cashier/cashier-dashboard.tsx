@@ -956,8 +956,9 @@ export function CashierDashboard() {
         .select("session_token")
         .eq("id", tableId)
         .single();
-      const oldSessionToken = (oldTableData as { session_token?: string } | null)
-        ?.session_token;
+      const oldSessionToken = (
+        oldTableData as { session_token?: string } | null
+      )?.session_token;
 
       // Mark all orders for this table as done
       const { error: ordersError } = await supabase
@@ -1832,9 +1833,7 @@ function CompactCard({
 
   return (
     <Card
-      className={`transition-shadow hover:shadow-md cursor-pointer group ${
-        isStale ? "ring-2 ring-red-400 dark:ring-red-600" : ""
-      }`}
+      className="transition-shadow hover:shadow-md cursor-pointer group"
       onClick={onView}
     >
       <CardContent className="p-2.5">

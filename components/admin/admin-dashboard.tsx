@@ -174,6 +174,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "1",
     category_id: "1",
+    parent_id: null,
     name: "Cơm Tấm Sườn Bì Chả",
     name_en: "Broken Rice with Pork Chop",
     description: "Cơm tấm đặc trưng Sài Gòn với sườn nướng, bì và chả",
@@ -192,6 +193,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "2",
     category_id: "1",
+    parent_id: null,
     name: "Cơm Gà Hội An",
     name_en: "Hoi An Chicken Rice",
     description: "Cơm gà kiểu Hội An với gà xé phay và nước mắm đặc biệt",
@@ -210,6 +212,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "3",
     category_id: "2",
+    parent_id: null,
     name: "Bún Thịt Nướng",
     name_en: "Vermicelli with Grilled Pork",
     description: "Bún tươi với thịt heo nướng thơm, rau sống",
@@ -228,6 +231,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "4",
     category_id: "2",
+    parent_id: null,
     name: "Bún Bò Huế",
     name_en: "Hue Beef Noodle Soup",
     description: "Bún bò Huế đậm đà với nước lèo cay nồng",
@@ -246,6 +250,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "5",
     category_id: "3",
+    parent_id: null,
     name: "Phở Bò Tái",
     name_en: "Pho with Rare Beef",
     description: "Phở nước trong với thịt bò tái mềm",
@@ -264,6 +269,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "6",
     category_id: "3",
+    parent_id: null,
     name: "Phở Gà",
     name_en: "Chicken Pho",
     description: "Phở gà nước trong vị thanh",
@@ -279,6 +285,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "7",
     category_id: "4",
+    parent_id: null,
     name: "Bánh Mì Thịt Nướng",
     name_en: "Banh Mi with Grilled Pork",
     description: "Bánh mì giòn với thịt heo nướng",
@@ -297,6 +304,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "8",
     category_id: "4",
+    parent_id: null,
     name: "Bánh Mì Chả",
     name_en: "Banh Mi with Vietnamese Ham",
     description: "Bánh mì với chả lua truyền thống",
@@ -312,6 +320,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "9",
     category_id: "6",
+    parent_id: null,
     name: "Gỏi Cuốn",
     name_en: "Fresh Spring Rolls",
     description: "2 cuốn gỏi cuốn tôm thịt với nước chấm",
@@ -328,6 +337,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
   {
     id: "10",
     category_id: "6",
+    parent_id: null,
     name: "Chả Giò",
     name_en: "Fried Spring Rolls",
     description: "4 cuốn chả giò giòn rụm",
@@ -628,6 +638,7 @@ export function AdminDashboard() {
     description_en: "",
     price: "",
     category_id: "",
+    parent_id: "" as string,
     images: [] as string[],
     newImageUrl: "",
     is_available: true,
@@ -941,6 +952,7 @@ export function AdminDashboard() {
         description_en: item.description_en || "",
         price: item.price.toString(),
         category_id: item.category_id || "",
+        parent_id: item.parent_id || "",
         images: images,
         newImageUrl: "",
         is_available: item.is_available,
@@ -954,6 +966,7 @@ export function AdminDashboard() {
         description_en: "",
         price: "",
         category_id: categories[0]?.id || "",
+        parent_id: "",
         images: [],
         newImageUrl: "",
         is_available: true,
@@ -982,6 +995,7 @@ export function AdminDashboard() {
                     description_en: menuForm.description_en || null,
                     price: parseInt(menuForm.price),
                     category_id: menuForm.category_id,
+                    parent_id: menuForm.parent_id || null,
                     image_url: menuForm.images[0] || null,
                     images: menuForm.images,
                     is_available: menuForm.is_available,
@@ -998,6 +1012,7 @@ export function AdminDashboard() {
             description_en: menuForm.description_en || null,
             price: parseInt(menuForm.price),
             category_id: menuForm.category_id,
+            parent_id: menuForm.parent_id || null,
             image_url: menuForm.images[0] || null,
             images: menuForm.images,
             is_available: menuForm.is_available,
@@ -1013,7 +1028,7 @@ export function AdminDashboard() {
       }
 
       const supabase = createClient();
-      const data = {
+      const data: Record<string, unknown> = {
         name: menuForm.name,
         name_en: menuForm.name_en || null,
         description: menuForm.description || null,
@@ -1024,15 +1039,22 @@ export function AdminDashboard() {
         images: menuForm.images,
         is_available: menuForm.is_available,
       };
+      // Only include parent_id if migration has been applied (avoids PGRST204)
+      if (menuForm.parent_id) {
+        data.parent_id = menuForm.parent_id;
+      } else if (editingItem?.parent_id) {
+        // Clear parent_id if it was previously set
+        data.parent_id = null;
+      }
 
       if (editingItem) {
         const { error } = await supabase
           .from("menu_items")
-          .update(data)
+          .update(data as never)
           .eq("id", editingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("menu_items").insert(data);
+        const { error } = await supabase.from("menu_items").insert(data as never);
         if (error) throw error;
       }
 
@@ -2095,9 +2117,22 @@ export function AdminDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            {category?.name || "-"}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="text-xs">
+                              {category?.name || "-"}
+                            </Badge>
+                            {item.parent_id && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                ↳ {menuItems.find((m) => m.id === item.parent_id)?.name || "—"}
+                              </Badge>
+                            )}
+                            {!item.parent_id &&
+                              menuItems.some((m) => m.parent_id === item.id) && (
+                                <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                                  Món cha
+                                </Badge>
+                              )}
+                          </div>
                           <span className="font-semibold text-primary">
                             {formatPrice(item.price)}
                           </span>
@@ -2172,18 +2207,36 @@ export function AdminDashboard() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{item.name}</div>
+                                <div className="font-medium">
+                                  {item.parent_id && (
+                                    <span className="text-muted-foreground mr-1">↳</span>
+                                  )}
+                                  {item.name}
+                                </div>
                                 {item.name_en && (
                                   <div className="text-xs text-muted-foreground">
                                     {item.name_en}
                                   </div>
                                 )}
+                                {item.parent_id && (
+                                  <div className="text-[10px] text-muted-foreground">
+                                    Thuộc: {menuItems.find((m) => m.id === item.parent_id)?.name || "—"}
+                                  </div>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">
-                                {category?.name || "-"}
-                              </Badge>
+                              <div className="flex flex-col gap-1">
+                                <Badge variant="outline">
+                                  {category?.name || "-"}
+                                </Badge>
+                                {!item.parent_id &&
+                                  menuItems.some((m) => m.parent_id === item.id) && (
+                                    <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20 w-fit">
+                                      Món cha
+                                    </Badge>
+                                  )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-right font-medium">
                               {formatPrice(item.price)}
@@ -2657,6 +2710,37 @@ export function AdminDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="parent_id">Món cha / Parent item</Label>
+                <select
+                  id="parent_id"
+                  value={menuForm.parent_id || ""}
+                  onChange={(e) =>
+                    setMenuForm((prev) => ({
+                      ...prev,
+                      parent_id: e.target.value,
+                    }))
+                  }
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="">Không (độc lập) / None</option>
+                  {menuItems
+                    .filter(
+                      (m) =>
+                        !m.parent_id &&
+                        m.id !== editingItem?.id,
+                    )
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                        {m.name_en ? ` (${m.name_en})` : ""}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Chọn món cha để tạo biến thể (VD: &ldquo;Phở Bò Tái&rdquo; thuộc &ldquo;Phở Bò&rdquo;)
+                </p>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
