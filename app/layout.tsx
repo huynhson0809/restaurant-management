@@ -6,8 +6,8 @@ import { Toaster } from '@/components/ui/sonner'
 import { LanguageProvider } from '@/lib/i18n/language-context'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geist = Geist({ subsets: ["latin", "latin-ext"], variable: "--font-geist" });
+const geistMono = Geist_Mono({ subsets: ["latin", "latin-ext"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
   title: {
@@ -59,7 +59,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className="font-sans antialiased">
+      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
         <LanguageProvider>
           {children}
           <Toaster richColors position="top-center" />

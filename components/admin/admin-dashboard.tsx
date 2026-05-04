@@ -11,6 +11,7 @@ import {
 import {
   getRestaurantName,
   getLogoUrl,
+  getHeaderImageUrl,
   initRestaurantSettings,
   setRestaurantInfo,
 } from "@/lib/restaurant-settings";
@@ -510,9 +511,12 @@ export function AdminDashboard() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [restaurantNameInput, setRestaurantNameInput] = useState<string>("");
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
+  const [headerImageUrl, setHeaderImageUrlState] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingHeaderImage, setIsUploadingHeaderImage] = useState(false);
   const [savingRestaurantInfo, setSavingRestaurantInfo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const headerImageInputRef = useRef<HTMLInputElement>(null);
   const [selectedHistoryOrder, setSelectedHistoryOrder] = useState<
     | (Order & {
         order_items: Array<{
@@ -532,6 +536,7 @@ export function AdminDashboard() {
     setResetHourInput(String(getResetHour()));
     setRestaurantNameInput(getRestaurantName());
     setLogoUrlState(getLogoUrl());
+    setHeaderImageUrlState(getHeaderImageUrl());
   }, []);
 
   async function saveResetHour() {
@@ -574,6 +579,27 @@ export function AdminDashboard() {
     }
   }
 
+  async function handleHeaderImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingHeaderImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
+      setHeaderImageUrlState(json.url);
+      toast.success("Tải ảnh header thành công. Bấm Lưu để áp dụng.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Lỗi không xác định";
+      toast.error(`Không thể tải ảnh: ${msg}`);
+    } finally {
+      setIsUploadingHeaderImage(false);
+      if (headerImageInputRef.current) headerImageInputRef.current.value = "";
+    }
+  }
+
   async function openHistoryDetail(order: Order) {
     setIsLoadingHistoryDetail(true);
     setSelectedHistoryOrder({ ...order, order_items: [] });
@@ -611,7 +637,7 @@ export function AdminDashboard() {
     }
     setSavingRestaurantInfo(true);
     try {
-      await setRestaurantInfo(createClient(), { name, logoUrl });
+      await setRestaurantInfo(createClient(), { name, logoUrl, headerImageUrl });
       toast.success("Đã lưu thông tin quán");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Lỗi không xác định";
@@ -699,9 +725,10 @@ export function AdminDashboard() {
       const supabase = createClient();
       // Refresh business-day reset hour + restaurant info from DB
       initBusinessDaySettings(supabase);
-      initRestaurantSettings(supabase).then(({ name, logoUrl }) => {
+      initRestaurantSettings(supabase).then(({ name, logoUrl, headerImageUrl }) => {
         setRestaurantNameInput(name);
         setLogoUrlState(logoUrl);
+        setHeaderImageUrlState(headerImageUrl);
       });
 
       const [catRes, menuRes, tableRes, orderRes] = await Promise.all([
@@ -1809,6 +1836,68 @@ export function AdminDashboard() {
                       )}
                       <p className="text-xs text-muted-foreground">
                         JPEG, PNG, WebP, GIF — Tối đa 5MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Ảnh nền header (trang khách)</Label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => headerImageUrl && setLightboxImage(headerImageUrl)}
+                      className="w-32 h-16 rounded-lg border bg-muted overflow-hidden shrink-0 flex items-center justify-center cursor-zoom-in"
+                      title={headerImageUrl ? "Xem ảnh nền" : "Chưa có ảnh nền"}
+                      disabled={!headerImageUrl}
+                    >
+                      {headerImageUrl ? (
+                        <img
+                          src={headerImageUrl}
+                          alt="Header"
+                          className="w-full h-full object-cover"
+                          crossOrigin="anonymous"
+                        />
+                      ) : (
+                        <ImageIcon className="w-6 h-6 text-muted-foreground/50" />
+                      )}
+                    </button>
+                    <div className="flex-1 space-y-2">
+                      <input
+                        ref={headerImageInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={handleHeaderImageUpload}
+                        className="hidden"
+                        id="header-image-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => headerImageInputRef.current?.click()}
+                        disabled={isUploadingHeaderImage}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {isUploadingHeaderImage
+                          ? "Đang tải..."
+                          : headerImageUrl
+                            ? "Đổi ảnh nền"
+                            : "Tải ảnh nền lên"}
+                      </Button>
+                      {headerImageUrl && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setHeaderImageUrlState(null)}
+                          className="text-destructive ml-2"
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Bỏ ảnh nền
+                        </Button>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Ảnh nền hiển thị ở phần header trang đặt món. Nên dùng ảnh ngang.
                       </p>
                     </div>
                   </div>

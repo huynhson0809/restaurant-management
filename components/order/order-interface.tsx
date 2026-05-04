@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -661,7 +661,7 @@ interface OrderInterfaceProps {
 
 export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
   const { language, t } = useLanguage();
-  const { name: restaurantName, logoUrl } = useRestaurantInfo();
+  const { name: restaurantName, logoUrl, headerImageUrl } = useRestaurantInfo();
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -1415,10 +1415,6 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
     // Only show parent/standalone items in grid
     let items = availableItems.filter((item) => !item.parent_id);
 
-    if (selectedCategory) {
-      items = items.filter((item) => item.category_id === selectedCategory);
-    }
-
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       items = items.filter((item) => {
@@ -1442,7 +1438,82 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
     }
 
     return items;
-  }, [menuItems, selectedCategory, searchQuery, visibleCategoryIds, childrenMap]);
+  }, [menuItems, searchQuery, visibleCategoryIds, childrenMap]);
+
+  // Group items by category for section-based rendering (scroll-spy)
+  const itemsByCategory = useMemo(() => {
+    const map = new Map<string, MenuItem[]>();
+    for (const cat of visibleCategories) {
+      const items = filteredItems.filter((item) => item.category_id === cat.id);
+      if (items.length > 0) {
+        map.set(cat.id, items);
+      }
+    }
+    return map;
+  }, [filteredItems, visibleCategories]);
+
+  // Auto-select the first category when none is selected
+  useEffect(() => {
+    if (!selectedCategory && visibleCategories.length > 0) {
+      setSelectedCategory(visibleCategories[0].id);
+    }
+  }, [selectedCategory, visibleCategories]);
+
+  // Refs for category section elements
+  const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const isScrollingToRef = useRef(false);
+  const categoryTabsRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll tab into view when selectedCategory changes
+  useEffect(() => {
+    if (!selectedCategory || !categoryTabsRef.current) return;
+    const btn = categoryTabsRef.current.querySelector(
+      `[data-category-tab="${selectedCategory}"]`,
+    ) as HTMLElement | null;
+    if (btn) {
+      btn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [selectedCategory]);
+
+  // IntersectionObserver for scroll-spy
+  useEffect(() => {
+    if (searchQuery.trim()) return; // No scroll-spy during search
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isScrollingToRef.current) return;
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const catId = entry.target.getAttribute("data-category-id");
+            if (catId) {
+              setSelectedCategory(catId);
+            }
+            break;
+          }
+        }
+      },
+      {
+        rootMargin: "-120px 0px -60% 0px",
+        threshold: 0,
+      },
+    );
+
+    sectionRefs.current.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [searchQuery, itemsByCategory]);
+
+  const scrollToCategory = useCallback((categoryId: string) => {
+    setSelectedCategory(categoryId);
+    const el = sectionRefs.current.get(categoryId);
+    if (el) {
+      isScrollingToRef.current = true;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Re-enable observer after scroll finishes
+      setTimeout(() => {
+        isScrollingToRef.current = false;
+      }, 800);
+    }
+  }, []);
 
   const cartTotal = useMemo(() => {
     return cart.reduce(
@@ -1810,8 +1881,14 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
+      <header
+        className="sticky top-0 z-40 border-b px-4 py-3 bg-card bg-cover bg-center"
+        style={headerImageUrl ? { backgroundImage: `url(${headerImageUrl})` } : undefined}
+      >
+        {headerImageUrl && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+        )}
+        <div className="relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center shrink-0">
               {logoUrl ? (
@@ -1826,16 +1903,16 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
               )}
             </div>
             <div className="min-w-0">
-              <h1 className="font-semibold text-foreground truncate">
+              <h1 className={`font-semibold truncate ${headerImageUrl ? "text-white" : "text-foreground"}`}>
                 {restaurantName}
               </h1>
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              <p className={`text-xs flex items-center gap-1.5 flex-wrap ${headerImageUrl ? "text-white/70" : "text-muted-foreground"}`}>
                 {isDemo && (
                   <Badge variant="secondary" className="text-xs">
                     Demo
                   </Badge>
                 )}
-                <span className="font-medium text-foreground">{tableName}</span>
+                <span className={`font-medium ${headerImageUrl ? "text-white" : "text-foreground"}`}>{tableName}</span>
                 <span>•</span>
                 <span>{t("selectDishesToAdd")}</span>
               </p>
@@ -1847,7 +1924,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
         </div>
 
         {/* Search */}
-        <div className="mt-3 relative">
+        <div className="relative mt-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="search"
@@ -1859,7 +1936,7 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
         </div>
 
         {/* Categories */}
-        <div className="mt-3 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+        <div className="relative mt-3 -mx-4 px-4 overflow-x-auto scrollbar-hide" ref={categoryTabsRef}>
           <div className="flex gap-2 pb-2 w-max">
             {visibleCategories.map((category) => (
               <Button
@@ -1868,8 +1945,9 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
                   selectedCategory === category.id ? "default" : "outline"
                 }
                 size="sm"
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => scrollToCategory(category.id)}
                 className="whitespace-nowrap"
+                data-category-tab={category.id}
               >
                 {getCategoryName(category)}
               </Button>
@@ -1879,105 +1957,220 @@ export function OrderInterface({ tableId, token }: OrderInterfaceProps) {
       </header>
 
       {/* Menu Items */}
-      <main className="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredItems.map((item) => {
-            const images = getItemImages(item);
-            const children = childrenMap.get(item.id);
-            const hasChildren = children && children.length > 0;
-            const minPrice = hasChildren
-              ? Math.min(...children.map((c) => c.price))
-              : item.price;
-            const maxPrice = hasChildren
-              ? Math.max(...children.map((c) => c.price))
-              : item.price;
-            return (
-              <Card key={item.id} className="overflow-hidden group relative">
-                <CardContent className="p-0">
-                  <button
-                    onClick={() => openAddItemDialog(item)}
-                    className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
-                  >
-                    {/* Food Image */}
-                    <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] bg-muted overflow-hidden">
-                      {images.length > 0 ? (
-                        <img
-                          src={images[0]}
-                          alt={getItemName(item)}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          crossOrigin="anonymous"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop&q=80";
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <UtensilsCrossed className="w-10 h-10 text-muted-foreground/40" />
-                        </div>
-                      )}
-                      {hasChildren && (
-                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full font-medium">
-                          {children.length} {t("variants").toLowerCase()}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Food Info */}
-                    <div className="p-3 space-y-1">
-                      <h3 className="font-semibold text-sm text-foreground leading-tight line-clamp-2">
-                        {getItemName(item)}
-                      </h3>
-                      {getItemDescription(item) && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {getItemDescription(item)}
-                        </p>
-                      )}
-                      {/* Show children list below description */}
-                      {hasChildren && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {children.map((c) => getItemName(c)).join(", ")}
-                        </p>
-                      )}
-                      <p className="text-primary font-bold text-sm pt-0.5">
-                        {hasChildren ? (
-                          minPrice === maxPrice ? (
-                            formatPrice(minPrice)
+      <main className="p-4 space-y-6">
+        {searchQuery.trim() ? (
+          /* Flat grid when searching */
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredItems.map((item) => {
+                const images = getItemImages(item);
+                const children = childrenMap.get(item.id);
+                const hasChildren = children && children.length > 0;
+                const minPrice = hasChildren
+                  ? Math.min(...children.map((c) => c.price))
+                  : item.price;
+                const maxPrice = hasChildren
+                  ? Math.max(...children.map((c) => c.price))
+                  : item.price;
+                return (
+                  <Card key={item.id} className="overflow-hidden group relative">
+                    <CardContent className="p-0">
+                      <button
+                        onClick={() => openAddItemDialog(item)}
+                        className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                      >
+                        {/* Food Image */}
+                        <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] bg-muted overflow-hidden">
+                          {images.length > 0 ? (
+                            <img
+                              src={images[0]}
+                              alt={getItemName(item)}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              crossOrigin="anonymous"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop&q=80";
+                              }}
+                            />
                           ) : (
-                            <>{formatPrice(minPrice)} - {formatPrice(maxPrice)}</>
-                          )
-                        ) : (
-                          formatPrice(item.price)
-                        )}
-                      </p>
-                    </div>
-                  </button>
-                  {/* Quick Add "+" button */}
-                  <Button
-                    size="icon"
-                    className="absolute bottom-3 right-3 h-9 w-9 rounded-full shadow-lg"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openAddItemDialog(item);
-                    }}
-                  >
-                    <Plus className="w-5 h-5" />
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                            <div className="w-full h-full flex items-center justify-center">
+                              <UtensilsCrossed className="w-10 h-10 text-muted-foreground/40" />
+                            </div>
+                          )}
+                          {hasChildren && (
+                            <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full font-medium">
+                              {children.length} {t("variants").toLowerCase()}
+                            </div>
+                          )}
+                        </div>
 
-        {filteredItems.length === 0 && (
-          <div className="text-center py-12">
-            <UtensilsCrossed className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              {searchQuery.trim()
-                ? t("noSearchResults")
-                : t("searchDishes")}
-            </p>
-          </div>
+                        {/* Food Info */}
+                        <div className="p-3 space-y-1">
+                          <h3 className="font-semibold text-sm text-foreground leading-tight line-clamp-2">
+                            {getItemName(item)}
+                          </h3>
+                          {getItemDescription(item) && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {getItemDescription(item)}
+                            </p>
+                          )}
+                          {hasChildren && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {children.map((c) => getItemName(c)).join(", ")}
+                            </p>
+                          )}
+                          <p className="text-primary font-bold text-sm pt-0.5">
+                            {hasChildren ? (
+                              minPrice === maxPrice ? (
+                                formatPrice(minPrice)
+                              ) : (
+                                <>{formatPrice(minPrice)} - {formatPrice(maxPrice)}</>
+                              )
+                            ) : (
+                              formatPrice(item.price)
+                            )}
+                          </p>
+                        </div>
+                      </button>
+                      {/* Quick Add "+" button */}
+                      <Button
+                        size="icon"
+                        className="absolute bottom-3 right-3 h-9 w-9 rounded-full shadow-lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAddItemDialog(item);
+                        }}
+                      >
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            {filteredItems.length === 0 && (
+              <div className="text-center py-12">
+                <UtensilsCrossed className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">{t("noSearchResults")}</p>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Grouped by category with scroll-spy */
+          <>
+            {visibleCategories.map((category) => {
+              const items = itemsByCategory.get(category.id);
+              if (!items || items.length === 0) return null;
+              return (
+                <section
+                  key={category.id}
+                  data-category-id={category.id}
+                  ref={(el) => {
+                    if (el) sectionRefs.current.set(category.id, el);
+                    else sectionRefs.current.delete(category.id);
+                  }}
+                  className="scroll-mt-[160px]"
+                >
+                  <h2 className="font-bold text-base text-foreground mb-3">
+                    {getCategoryName(category)}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {items.map((item) => {
+                      const images = getItemImages(item);
+                      const children = childrenMap.get(item.id);
+                      const hasChildren = children && children.length > 0;
+                      const minPrice = hasChildren
+                        ? Math.min(...children.map((c) => c.price))
+                        : item.price;
+                      const maxPrice = hasChildren
+                        ? Math.max(...children.map((c) => c.price))
+                        : item.price;
+                      return (
+                        <Card key={item.id} className="overflow-hidden group relative">
+                          <CardContent className="p-0">
+                            <button
+                              onClick={() => openAddItemDialog(item)}
+                              className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                            >
+                              {/* Food Image */}
+                              <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] bg-muted overflow-hidden">
+                                {images.length > 0 ? (
+                                  <img
+                                    src={images[0]}
+                                    alt={getItemName(item)}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    crossOrigin="anonymous"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src =
+                                        "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop&q=80";
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <UtensilsCrossed className="w-10 h-10 text-muted-foreground/40" />
+                                  </div>
+                                )}
+                                {hasChildren && (
+                                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full font-medium">
+                                    {children.length} {t("variants").toLowerCase()}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Food Info */}
+                              <div className="p-3 space-y-1">
+                                <h3 className="font-semibold text-sm text-foreground leading-tight line-clamp-2">
+                                  {getItemName(item)}
+                                </h3>
+                                {getItemDescription(item) && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2">
+                                    {getItemDescription(item)}
+                                  </p>
+                                )}
+                                {hasChildren && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2">
+                                    {children.map((c) => getItemName(c)).join(", ")}
+                                  </p>
+                                )}
+                                <p className="text-primary font-bold text-sm pt-0.5">
+                                  {hasChildren ? (
+                                    minPrice === maxPrice ? (
+                                      formatPrice(minPrice)
+                                    ) : (
+                                      <>{formatPrice(minPrice)} - {formatPrice(maxPrice)}</>
+                                    )
+                                  ) : (
+                                    formatPrice(item.price)
+                                  )}
+                                </p>
+                              </div>
+                            </button>
+                            {/* Quick Add "+" button */}
+                            <Button
+                              size="icon"
+                              className="absolute bottom-3 right-3 h-9 w-9 rounded-full shadow-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openAddItemDialog(item);
+                              }}
+                            >
+                              <Plus className="w-5 h-5" />
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+            {filteredItems.length === 0 && (
+              <div className="text-center py-12">
+                <UtensilsCrossed className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">{t("searchDishes")}</p>
+              </div>
+            )}
+          </>
         )}
       </main>
 

@@ -10,6 +10,7 @@ type SupabaseLike = any
 
 const NAME_KEY = 'restaurant-name'
 const LOGO_KEY = 'restaurant-logo-url'
+const HEADER_IMAGE_KEY = 'restaurant-header-image-url'
 const DEFAULT_NAME = 'Nhà hàng'
 
 function readCache(key: string): string | null {
@@ -42,36 +43,42 @@ export function getLogoUrl(): string | null {
   return readCache(LOGO_KEY)
 }
 
+export function getHeaderImageUrl(): string | null {
+  return readCache(HEADER_IMAGE_KEY)
+}
+
 /**
  * Fetch restaurant settings from DB and update localStorage cache. Call once
  * on mount of any page that displays the name/logo. Idempotent.
  */
 export async function initRestaurantSettings(
   supabase: SupabaseLike,
-): Promise<{ name: string; logoUrl: string | null }> {
+): Promise<{ name: string; logoUrl: string | null; headerImageUrl: string | null }> {
   try {
     const { data } = await supabase
       .from('restaurant_settings')
-      .select('restaurant_name, logo_url')
+      .select('restaurant_name, logo_url, header_image_url')
       .eq('id', 1)
       .maybeSingle()
     const row = data as
-      | { restaurant_name?: string; logo_url?: string | null }
+      | { restaurant_name?: string; logo_url?: string | null; header_image_url?: string | null }
       | null
     const name = row?.restaurant_name?.trim() || DEFAULT_NAME
     const logoUrl = row?.logo_url ?? null
+    const headerImageUrl = row?.header_image_url ?? null
     writeCache(NAME_KEY, name)
     writeCache(LOGO_KEY, logoUrl)
-    return { name, logoUrl }
+    writeCache(HEADER_IMAGE_KEY, headerImageUrl)
+    return { name, logoUrl, headerImageUrl }
   } catch (err) {
     console.error('Failed to load restaurant settings:', err)
-    return { name: getRestaurantName(), logoUrl: getLogoUrl() }
+    return { name: getRestaurantName(), logoUrl: getLogoUrl(), headerImageUrl: getHeaderImageUrl() }
   }
 }
 
 export async function setRestaurantInfo(
   supabase: SupabaseLike,
-  patch: { name?: string; logoUrl?: string | null },
+  patch: { name?: string; logoUrl?: string | null; headerImageUrl?: string | null },
 ): Promise<void> {
   const update: Record<string, unknown> = {
     id: 1,
@@ -79,12 +86,14 @@ export async function setRestaurantInfo(
   }
   if (patch.name !== undefined) update.restaurant_name = patch.name
   if (patch.logoUrl !== undefined) update.logo_url = patch.logoUrl
+  if (patch.headerImageUrl !== undefined) update.header_image_url = patch.headerImageUrl
   const { error } = await supabase
     .from('restaurant_settings')
     .upsert(update, { onConflict: 'id' })
   if (error) throw error
   if (patch.name !== undefined) writeCache(NAME_KEY, patch.name || DEFAULT_NAME)
   if (patch.logoUrl !== undefined) writeCache(LOGO_KEY, patch.logoUrl)
+  if (patch.headerImageUrl !== undefined) writeCache(HEADER_IMAGE_KEY, patch.headerImageUrl)
 }
 
 /**
@@ -93,7 +102,7 @@ export async function setRestaurantInfo(
  */
 export function subscribeRestaurantSettings(
   supabase: SupabaseLike,
-  onChange: (next: { name: string; logoUrl: string | null }) => void,
+  onChange: (next: { name: string; logoUrl: string | null; headerImageUrl: string | null }) => void,
 ): () => void {
   const channel = supabase
     .channel('restaurant-settings-live')
@@ -105,14 +114,16 @@ export function subscribeRestaurantSettings(
         table: 'restaurant_settings',
         filter: 'id=eq.1',
       },
-      (payload: { new: { restaurant_name?: string; logo_url?: string | null } | null }) => {
+      (payload: { new: { restaurant_name?: string; logo_url?: string | null; header_image_url?: string | null } | null }) => {
         const row = payload.new
         if (!row) return
         const name = row.restaurant_name?.trim() || DEFAULT_NAME
         const logoUrl = row.logo_url ?? null
+        const headerImageUrl = row.header_image_url ?? null
         writeCache(NAME_KEY, name)
         writeCache(LOGO_KEY, logoUrl)
-        onChange({ name, logoUrl })
+        writeCache(HEADER_IMAGE_KEY, headerImageUrl)
+        onChange({ name, logoUrl, headerImageUrl })
       },
     )
     .subscribe()

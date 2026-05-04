@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
+  getHeaderImageUrl,
   getLogoUrl,
   getRestaurantName,
   initRestaurantSettings,
@@ -10,14 +11,12 @@ import {
 } from '@/lib/restaurant-settings'
 
 /**
- * Returns the restaurant's display name and logo URL with live updates.
- * - Initial value comes from localStorage (instant, no flash)
- * - Refreshed from DB on mount
- * - Realtime subscription updates state when admin edits
+ * Returns the restaurant's display name, logo URL, and header image URL with live updates.
  */
-export function useRestaurantInfo(): { name: string; logoUrl: string | null } {
+export function useRestaurantInfo(): { name: string; logoUrl: string | null; headerImageUrl: string | null } {
   const [name, setName] = useState<string>(() => getRestaurantName())
   const [logoUrl, setLogoUrl] = useState<string | null>(() => getLogoUrl())
+  const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(() => getHeaderImageUrl())
 
   useEffect(() => {
     if (
@@ -30,13 +29,15 @@ export function useRestaurantInfo(): { name: string; logoUrl: string | null } {
     initRestaurantSettings(supabase).then((next) => {
       setName(next.name)
       setLogoUrl(next.logoUrl)
+      setHeaderImageUrl(next.headerImageUrl)
     })
     const unsubscribe = subscribeRestaurantSettings(supabase, (next) => {
       setName(next.name)
       setLogoUrl(next.logoUrl)
+      setHeaderImageUrl(next.headerImageUrl)
     })
     return unsubscribe
   }, [])
 
-  return { name, logoUrl }
+  return { name, logoUrl, headerImageUrl }
 }
