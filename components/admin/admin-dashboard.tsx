@@ -2,6 +2,23 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   getBusinessDayRange,
   getBusinessDayRangeAgo,
   getResetHour,
@@ -86,6 +103,7 @@ import {
   EyeOff,
   AlertTriangle,
   Search,
+  GripVertical,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -493,6 +511,151 @@ function formatDateTime(dateString: string): string {
   });
 }
 
+function SortableCategoryItem({
+  cat,
+  itemCount,
+  onEdit,
+  onToggleActive,
+  onDelete,
+}: {
+  cat: Category;
+  itemCount: number;
+  onEdit: () => void;
+  onToggleActive: () => void;
+  onDelete: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: cat.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-0.5 rounded-md border bg-secondary/50 hover:bg-secondary/80 transition-colors ${
+        !cat.is_active ? "opacity-60" : ""
+      }`}
+    >
+      <button
+        type="button"
+        className="p-1.5 cursor-grab active:cursor-grabbing touch-none"
+        {...attributes}
+        {...listeners}
+        aria-label="Kéo để sắp xếp"
+      >
+        <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
+      </button>
+      <button
+        type="button"
+        className="flex items-center gap-1.5 py-1.5 text-sm font-medium"
+        onClick={onEdit}
+        title="Sửa danh mục"
+      >
+        {!cat.is_active && <EyeOff className="w-3 h-3 text-muted-foreground" />}
+        <span>{cat.name}</span>
+        <Pencil className="w-3 h-3 text-muted-foreground" />
+      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="p-1.5 hover:bg-secondary rounded-r-md"
+            aria-label="Tùy chọn"
+          >
+            <MoreVertical className="w-3.5 h-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                {cat.is_active ? (
+                  <>
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    Ẩn danh mục
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Hiện danh mục
+                  </>
+                )}
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {cat.is_active
+                    ? `Ẩn danh mục "${cat.name}"?`
+                    : `Hiện danh mục "${cat.name}"?`}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {cat.is_active
+                    ? `${itemCount} món thuộc danh mục này sẽ KHÔNG hiển thị trong menu khách hàng. Dữ liệu vẫn được giữ lại, có thể hiện lại bất cứ lúc nào.`
+                    : `${itemCount} món thuộc danh mục này sẽ hiển thị lại trong menu khách hàng (nếu món đó đang bật trạng thái bán).`}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction onClick={onToggleActive}>
+                  {cat.is_active ? "Ẩn" : "Hiện"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={(e) => e.preventDefault()}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Xóa danh mục
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                  Xóa danh mục &ldquo;{cat.name}&rdquo;?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Hành động này KHÔNG THỂ HOÀN TÁC.{" "}
+                  <strong>
+                    {itemCount} món thuộc danh mục này sẽ bị xóa vĩnh viễn
+                  </strong>{" "}
+                  khỏi menu. Cân nhắc dùng &ldquo;Ẩn danh mục&rdquo; nếu chỉ
+                  muốn tạm tắt.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={onDelete}
+                >
+                  Xóa vĩnh viễn
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [chartPeriod, setChartPeriod] = useState<
@@ -511,7 +674,9 @@ export function AdminDashboard() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [restaurantNameInput, setRestaurantNameInput] = useState<string>("");
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
-  const [headerImageUrl, setHeaderImageUrlState] = useState<string | null>(null);
+  const [headerImageUrl, setHeaderImageUrlState] = useState<string | null>(
+    null,
+  );
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingHeaderImage, setIsUploadingHeaderImage] = useState(false);
   const [savingRestaurantInfo, setSavingRestaurantInfo] = useState(false);
@@ -539,6 +704,47 @@ export function AdminDashboard() {
     setHeaderImageUrlState(getHeaderImageUrl());
   }, []);
 
+  // DnD sensors for category reorder
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  async function handleCategoryDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(categories, oldIndex, newIndex);
+    setCategories(reordered);
+
+    // Save new sort_order to DB
+    if (isDemo) return;
+    try {
+      const supabase = createClient();
+      const updates = reordered.map((cat, idx) => ({
+        id: cat.id,
+        sort_order: idx + 1,
+      }));
+      for (const u of updates) {
+        await supabase
+          .from("categories")
+          .update({ sort_order: u.sort_order })
+          .eq("id", u.id);
+      }
+      toast.success("Đã lưu thứ tự danh mục");
+    } catch (err) {
+      console.error("Error saving category order:", err);
+      toast.error("Không thể lưu thứ tự");
+      loadData(); // revert
+    }
+  }
+
   async function saveResetHour() {
     const n = Number(resetHourInput);
     if (!Number.isFinite(n) || n < 0 || n >= 24) {
@@ -565,7 +771,10 @@ export function AdminDashboard() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Upload failed");
       setLogoUrlState(json.url);
@@ -579,14 +788,19 @@ export function AdminDashboard() {
     }
   }
 
-  async function handleHeaderImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleHeaderImageUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploadingHeaderImage(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Upload failed");
       setHeaderImageUrlState(json.url);
@@ -637,7 +851,11 @@ export function AdminDashboard() {
     }
     setSavingRestaurantInfo(true);
     try {
-      await setRestaurantInfo(createClient(), { name, logoUrl, headerImageUrl });
+      await setRestaurantInfo(createClient(), {
+        name,
+        logoUrl,
+        headerImageUrl,
+      });
       toast.success("Đã lưu thông tin quán");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Lỗi không xác định";
@@ -725,11 +943,13 @@ export function AdminDashboard() {
       const supabase = createClient();
       // Refresh business-day reset hour + restaurant info from DB
       initBusinessDaySettings(supabase);
-      initRestaurantSettings(supabase).then(({ name, logoUrl, headerImageUrl }) => {
-        setRestaurantNameInput(name);
-        setLogoUrlState(logoUrl);
-        setHeaderImageUrlState(headerImageUrl);
-      });
+      initRestaurantSettings(supabase).then(
+        ({ name, logoUrl, headerImageUrl }) => {
+          setRestaurantNameInput(name);
+          setLogoUrlState(logoUrl);
+          setHeaderImageUrlState(headerImageUrl);
+        },
+      );
 
       const [catRes, menuRes, tableRes, orderRes] = await Promise.all([
         supabase.from("categories").select("*").order("sort_order"),
@@ -1081,7 +1301,9 @@ export function AdminDashboard() {
           .eq("id", editingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("menu_items").insert(data as never);
+        const { error } = await supabase
+          .from("menu_items")
+          .insert(data as never);
         if (error) throw error;
       }
 
@@ -1316,7 +1538,9 @@ export function AdminDashboard() {
         prev.map((c) => (c.id === cat.id ? { ...c, is_active: next } : c)),
       );
       toast.success(
-        next ? `Đã hiện danh mục "${cat.name}"` : `Đã ẩn danh mục "${cat.name}"`,
+        next
+          ? `Đã hiện danh mục "${cat.name}"`
+          : `Đã ẩn danh mục "${cat.name}"`,
       );
       return;
     }
@@ -1328,7 +1552,9 @@ export function AdminDashboard() {
         .eq("id", cat.id);
       if (error) throw error;
       toast.success(
-        next ? `Đã hiện danh mục "${cat.name}"` : `Đã ẩn danh mục "${cat.name}"`,
+        next
+          ? `Đã hiện danh mục "${cat.name}"`
+          : `Đã ẩn danh mục "${cat.name}"`,
       );
       loadData();
     } catch (error) {
@@ -1845,7 +2071,9 @@ export function AdminDashboard() {
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => headerImageUrl && setLightboxImage(headerImageUrl)}
+                      onClick={() =>
+                        headerImageUrl && setLightboxImage(headerImageUrl)
+                      }
                       className="w-32 h-16 rounded-lg border bg-muted overflow-hidden shrink-0 flex items-center justify-center cursor-zoom-in"
                       title={headerImageUrl ? "Xem ảnh nền" : "Chưa có ảnh nền"}
                       disabled={!headerImageUrl}
@@ -1897,7 +2125,8 @@ export function AdminDashboard() {
                         </Button>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Ảnh nền hiển thị ở phần header trang đặt món. Nên dùng ảnh ngang.
+                        Ảnh nền hiển thị ở phần header trang đặt món. Nên dùng
+                        ảnh ngang.
                       </p>
                     </div>
                   </div>
@@ -1977,127 +2206,39 @@ export function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Danh Mục</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Kéo thả để sắp xếp thứ tự hiển thị
+                </p>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => {
-                    const itemCount = menuItems.filter(
-                      (mi) => mi.category_id === cat.id,
-                    ).length;
-                    return (
-                      <div
-                        key={cat.id}
-                        className={`flex items-center gap-1 rounded-md border bg-secondary/50 hover:bg-secondary/80 transition-colors ${
-                          !cat.is_active ? "opacity-60" : ""
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          className="flex items-center gap-1.5 py-1.5 pl-3 text-sm font-medium"
-                          onClick={() => openCategoryDialog(cat)}
-                          title="Sửa danh mục"
-                        >
-                          {!cat.is_active && (
-                            <EyeOff className="w-3 h-3 text-muted-foreground" />
-                          )}
-                          <span>{cat.name}</span>
-                          <Pencil className="w-3 h-3 text-muted-foreground" />
-                        </button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="p-1.5 hover:bg-secondary rounded-r-md"
-                              aria-label="Tùy chọn"
-                            >
-                              <MoreVertical className="w-3.5 h-3.5" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem
-                                  onSelect={(e) => e.preventDefault()}
-                                >
-                                  {cat.is_active ? (
-                                    <>
-                                      <EyeOff className="w-4 h-4 mr-2" />
-                                      Ẩn danh mục
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Eye className="w-4 h-4 mr-2" />
-                                      Hiện danh mục
-                                    </>
-                                  )}
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    {cat.is_active
-                                      ? `Ẩn danh mục "${cat.name}"?`
-                                      : `Hiện danh mục "${cat.name}"?`}
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {cat.is_active
-                                      ? `${itemCount} món thuộc danh mục này sẽ KHÔNG hiển thị trong menu khách hàng. Dữ liệu vẫn được giữ lại, có thể hiện lại bất cứ lúc nào.`
-                                      : `${itemCount} món thuộc danh mục này sẽ hiển thị lại trong menu khách hàng (nếu món đó đang bật trạng thái bán).`}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => toggleCategoryActive(cat)}
-                                  >
-                                    {cat.is_active ? "Ẩn" : "Hiện"}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onSelect={(e) => e.preventDefault()}
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Xóa danh mục
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="flex items-center gap-2">
-                                    <AlertTriangle className="w-5 h-5 text-destructive" />
-                                    Xóa danh mục &ldquo;{cat.name}&rdquo;?
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Hành động này KHÔNG THỂ HOÀN TÁC.{" "}
-                                    <strong>
-                                      {itemCount} món thuộc danh mục này sẽ bị
-                                      xóa vĩnh viễn
-                                    </strong>{" "}
-                                    khỏi menu. Cân nhắc dùng &ldquo;Ẩn danh
-                                    mục&rdquo; nếu chỉ muốn tạm tắt.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => deleteCategory(cat)}
-                                  >
-                                    Xóa vĩnh viễn
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    );
-                  })}
-                </div>
+                <DndContext
+                  sensors={dndSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleCategoryDragEnd}
+                >
+                  <SortableContext
+                    items={categories.map((c) => c.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((cat) => {
+                        const itemCount = menuItems.filter(
+                          (mi) => mi.category_id === cat.id,
+                        ).length;
+                        return (
+                          <SortableCategoryItem
+                            key={cat.id}
+                            cat={cat}
+                            itemCount={itemCount}
+                            onEdit={() => openCategoryDialog(cat)}
+                            onToggleActive={() => toggleCategoryActive(cat)}
+                            onDelete={() => deleteCategory(cat)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               </CardContent>
             </Card>
 
@@ -2211,12 +2352,19 @@ export function AdminDashboard() {
                               {category?.name || "-"}
                             </Badge>
                             {item.parent_id && (
-                              <Badge variant="secondary" className="text-[10px]">
-                                ↳ {menuItems.find((m) => m.id === item.parent_id)?.name || "—"}
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px]"
+                              >
+                                ↳{" "}
+                                {menuItems.find((m) => m.id === item.parent_id)
+                                  ?.name || "—"}
                               </Badge>
                             )}
                             {!item.parent_id &&
-                              menuItems.some((m) => m.parent_id === item.id) && (
+                              menuItems.some(
+                                (m) => m.parent_id === item.id,
+                              ) && (
                                 <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">
                                   Món cha
                                 </Badge>
@@ -2298,7 +2446,9 @@ export function AdminDashboard() {
                               <div>
                                 <div className="font-medium">
                                   {item.parent_id && (
-                                    <span className="text-muted-foreground mr-1">↳</span>
+                                    <span className="text-muted-foreground mr-1">
+                                      ↳
+                                    </span>
                                   )}
                                   {item.name}
                                 </div>
@@ -2309,7 +2459,10 @@ export function AdminDashboard() {
                                 )}
                                 {item.parent_id && (
                                   <div className="text-[10px] text-muted-foreground">
-                                    Thuộc: {menuItems.find((m) => m.id === item.parent_id)?.name || "—"}
+                                    Thuộc:{" "}
+                                    {menuItems.find(
+                                      (m) => m.id === item.parent_id,
+                                    )?.name || "—"}
                                   </div>
                                 )}
                               </div>
@@ -2320,7 +2473,9 @@ export function AdminDashboard() {
                                   {category?.name || "-"}
                                 </Badge>
                                 {!item.parent_id &&
-                                  menuItems.some((m) => m.parent_id === item.id) && (
+                                  menuItems.some(
+                                    (m) => m.parent_id === item.id,
+                                  ) && (
                                     <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20 w-fit">
                                       Món cha
                                     </Badge>
@@ -2815,11 +2970,7 @@ export function AdminDashboard() {
                 >
                   <option value="">Không (độc lập) / None</option>
                   {menuItems
-                    .filter(
-                      (m) =>
-                        !m.parent_id &&
-                        m.id !== editingItem?.id,
-                    )
+                    .filter((m) => !m.parent_id && m.id !== editingItem?.id)
                     .map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}
@@ -2828,7 +2979,8 @@ export function AdminDashboard() {
                     ))}
                 </select>
                 <p className="text-xs text-muted-foreground">
-                  Chọn món cha để tạo biến thể (VD: &ldquo;Phở Bò Tái&rdquo; thuộc &ldquo;Phở Bò&rdquo;)
+                  Chọn món cha để tạo biến thể (VD: &ldquo;Phở Bò Tái&rdquo;
+                  thuộc &ldquo;Phở Bò&rdquo;)
                 </p>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
@@ -2887,9 +3039,7 @@ export function AdminDashboard() {
                         const t = tables.find(
                           (x) => x.id === selectedHistoryOrder.table_id,
                         );
-                        return (
-                          t?.name || `Bàn ${t?.table_number || "?"}`
-                        );
+                        return t?.name || `Bàn ${t?.table_number || "?"}`;
                       })()}
                     </div>
                   </div>
@@ -2914,9 +3064,7 @@ export function AdminDashboard() {
                     </Badge>
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground">
-                      Đặt lúc
-                    </div>
+                    <div className="text-xs text-muted-foreground">Đặt lúc</div>
                     <div className="font-medium text-sm">
                       {formatDateTime(selectedHistoryOrder.created_at)}
                     </div>
@@ -2998,8 +3146,7 @@ export function AdminDashboard() {
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {item.quantity} ×{" "}
-                              {formatPrice(item.unit_price)}
+                              {item.quantity} × {formatPrice(item.unit_price)}
                             </div>
                             {item.notes && (
                               <div className="text-xs text-orange-600 dark:text-orange-400 italic mt-1 break-words">
